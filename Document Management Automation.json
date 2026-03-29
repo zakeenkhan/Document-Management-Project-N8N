@@ -1,0 +1,1089 @@
+{
+  "name": "Document Management Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1kvJs88oa8mHMjfIYTdWqbq5QwcDqy3rK",
+          "mode": "list",
+          "cachedResultName": "Testing ",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1kvJs88oa8mHMjfIYTdWqbq5QwcDqy3rK"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "c1f5f052-5ecc-4af4-8385-fbf5a26c6b23",
+      "name": "New Document in Drive",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        816
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "MILDvNoMZzf1ztBZ",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "e5f0abe0-bbfc-4851-b112-510b0ec1743d",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $(\"Download file\").item.json.name }}",
+                    "rightValue": "contract",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "fefd2b20-7bff-43cc-88ce-2a7d4d215de7"
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Contract"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $(\"Download file\").item.json.name }}",
+                    "rightValue": "invoice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "cdb89305-c88e-409c-845c-bc981cb0219f"
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "Invoice"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "General Document"
+        }
+      },
+      "id": "e80ee15d-6936-4b77-9ed9-defc5874ea01",
+      "name": "Classify Document Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1088,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract key information from this contract:\n\n{{ $json.data }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a contract analysis expert. Extract all key contract details including parties, dates, financial terms, and important clauses. Be precise and thorough."
+        }
+      },
+      "id": "c8a8ea52-2c51-4d8c-b9ff-78c1e2f7a3f2",
+      "name": "Extract Contract Data",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1328,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": {
+          "parties": [
+            "Company A",
+            "Company B"
+          ],
+          "effectiveDate": "2024-01-15",
+          "expirationDate": "2025-01-15",
+          "contractValue": 50000,
+          "paymentTerms": "Net 30",
+          "autoRenewal": true,
+          "keyTerms": [
+            "12 month term",
+            "Automatic renewal",
+            "Net 30 payment"
+          ]
+        }
+      },
+      "id": "e1ef42e6-3a08-468d-98ea-ef9c2d07127b",
+      "name": "Contract Data Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1472,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "documentId",
+              "value": "={{ $('New Document in Drive').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "documentName",
+              "value": "={{ $('New Document in Drive').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "documentType",
+              "value": "Contract",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "parties",
+              "value": "={{ $json.output.parties.join(\", \") }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "effectiveDate",
+              "value": "={{ $json.output.effectiveDate }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "expirationDate",
+              "value": "={{ $json.output.expirationDate }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "contractValue",
+              "value": "={{ $json.output.contractValue }}",
+              "type": "number"
+            },
+            {
+              "id": "8",
+              "name": "status",
+              "value": "Processed",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "driveLink",
+              "value": "={{ $('New Document in Drive').item.json.webViewLink }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ed6f82fd-4d81-4724-bd56-a854d570551b",
+      "name": "Prepare Contract Metadata",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{ $json.documentId }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1BfT-dJGTJw7Ohtn1ByJNQTtH3EqtOxcp",
+          "mode": "list",
+          "cachedResultName": "Contract Archieve",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1BfT-dJGTJw7Ohtn1ByJNQTtH3EqtOxcp"
+        }
+      },
+      "id": "bd4929b1-ea12-4358-83e3-92b9aad83e7e",
+      "name": "Move to Contracts Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1872,
+        448
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "MILDvNoMZzf1ztBZ",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.data }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "invoiceNumber",
+              "description": "Invoice number",
+              "required": true
+            },
+            {
+              "name": "invoiceDate",
+              "type": "date",
+              "description": "Invoice date",
+              "required": true
+            },
+            {
+              "name": "dueDate",
+              "type": "date",
+              "description": "Payment due date",
+              "required": true
+            },
+            {
+              "name": "totalAmount",
+              "type": "number",
+              "description": "Total invoice amount",
+              "required": true
+            },
+            {
+              "name": "vendor",
+              "description": "Vendor name",
+              "required": true
+            },
+            {
+              "name": "customer",
+              "description": "Customer name",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f60a0cd-dd61-4d8b-95b2-716ff4684e3e",
+      "name": "Extract Invoice Data",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "documentId",
+              "value": "={{ $('New Document in Drive').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "documentName",
+              "value": "={{ $('New Document in Drive').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "documentType",
+              "value": "Invoice",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "invoiceNumber",
+              "value": "={{ $json.invoiceNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "vendor",
+              "value": "={{ $json.vendor }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "customer",
+              "value": "={{ $json.customer }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "amount",
+              "value": "={{ $json.totalAmount }}",
+              "type": "number"
+            },
+            {
+              "id": "8",
+              "name": "dueDate",
+              "value": "={{ $json.dueDate }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "status",
+              "value": "Processed",
+              "type": "string"
+            },
+            {
+              "id": "10",
+              "name": "driveLink",
+              "value": "={{ $('New Document in Drive').item.json.webViewLink }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0ea0f396-48e2-4c21-ab97-d4298b099dd9",
+      "name": "Prepare Invoice Metadata",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{ $json.documentId }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1_aF5-6RpuUKFRw8xG9wmBroKL_9yjgbH",
+          "mode": "list",
+          "cachedResultName": "Invoice Archieve",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1_aF5-6RpuUKFRw8xG9wmBroKL_9yjgbH"
+        }
+      },
+      "id": "ffd9828e-06c1-4846-9d81-912f15f741aa",
+      "name": "Move to Invoices Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1872,
+        896
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "MILDvNoMZzf1ztBZ",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Provide a concise summary of this document, highlighting key points and action items:\n\n{{ $json.text }}",
+        "options": {
+          "systemMessage": "You are a document summarization expert. Create clear, actionable summaries that capture the essence of documents."
+        }
+      },
+      "id": "06bb6a96-883f-4390-b4cf-7ed34340b10b",
+      "name": "Summarize Document",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1296,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "2b0fed65-f59a-47e2-b46a-a0c795cc27db",
+      "name": "OpenAI for Summaries",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1296,
+        1488
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "TpZxpvuRKLtGJGEq",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "documentId",
+              "value": "={{ $('New Document in Drive').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "documentName",
+              "value": "={{ $('New Document in Drive').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "documentType",
+              "value": "General",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "summary",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "status",
+              "value": "Processed",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "driveLink",
+              "value": "={{ $('New Document in Drive').item.json.webViewLink }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3b76639b-410d-4ca6-a654-e37ae2d4beb8",
+      "name": "Prepare General Metadata",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1616,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{ $json.documentId }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "19jrZKjS3rpXNQUB0uttFqsW9nWVAbbnr",
+          "mode": "list",
+          "cachedResultName": "General Archieve",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/19jrZKjS3rpXNQUB0uttFqsW9nWVAbbnr"
+        }
+      },
+      "id": "b683df82-19c3-41aa-a1c1-afdd95767441",
+      "name": "Move to Archive Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1824,
+        1280
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "MILDvNoMZzf1ztBZ",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "GIaIJTHsdTWpphqk",
+          "mode": "list",
+          "cachedResultName": "Document Registry",
+          "cachedResultUrl": "/projects/CUx1YhgHuvrpP2eE/datatables/GIaIJTHsdTWpphqk"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "68a0aed8-5e90-4ee2-ba50-aa0cc22cc973",
+      "name": "Store Document Metadata",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2128,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        672
+      ],
+      "id": "05f3a65e-09bc-42bd-a922-a9995a70e9e8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "x3aq8mmQHRVg1KZD",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        1072
+      ],
+      "id": "0956e05f-d7cc-4b97-9480-427f7c4cbf27",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "Eoc7fahjb8HpqSz2",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        176,
+        816
+      ],
+      "id": "c92ce726-6848-42b7-9bd8-5d43357f6ca9",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "MILDvNoMZzf1ztBZ",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "pdf-check"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "36af4fe5-82f6-4269-9f79-6bd9dc16f4c8",
+      "name": "Check File Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        352,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "xlsx-check"
+            },
+            {
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "application/vnd.google-apps.spreadsheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "gsheet-check"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "c421aabb-47b1-4865-823e-6ab7253dbf37",
+      "name": "Check Excel Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "id": "c2275ddf-0924-43fb-bd44-230afdba7e59",
+      "name": "Extract Excel Data",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "image/",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              },
+              "id": "image-check"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "a48f4bcf-6649-473b-b425-b712ff5e8b5c",
+      "name": "Check Image Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-6",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-6"
+        },
+        "options": {}
+      },
+      "id": "ea27f71f-b64c-4ac7-9ed6-80fa0bba3358",
+      "name": "Extract Image Text",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        944,
+        1088
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "uOGKinNDxklzMrZg",
+          "name": "Anthropic account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "New Document in Drive": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Classify Document Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Document Type": {
+      "main": [
+        [
+          {
+            "node": "Extract Contract Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Invoice Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Summarize Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Contract Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare Contract Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contract Data Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extract Contract Data",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Contract Metadata": {
+      "main": [
+        [
+          {
+            "node": "Move to Contracts Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Contracts Folder": {
+      "main": [
+        [
+          {
+            "node": "Store Document Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare Invoice Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Invoice Metadata": {
+      "main": [
+        [
+          {
+            "node": "Move to Invoices Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Invoices Folder": {
+      "main": [
+        [
+          {
+            "node": "Store Document Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Document": {
+      "main": [
+        [
+          {
+            "node": "Prepare General Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI for Summaries": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarize Document",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare General Metadata": {
+      "main": [
+        [
+          {
+            "node": "Move to Archive Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Archive Folder": {
+      "main": [
+        [
+          {
+            "node": "Store Document Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Contract Data",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Invoice Data",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Check File Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check File Type": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Excel Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Excel Type": {
+      "main": [
+        [
+          {
+            "node": "Extract Excel Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Image Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Excel Data": {
+      "main": [
+        [
+          {
+            "node": "Classify Document Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Image Type": {
+      "main": [
+        [
+          {
+            "node": "Extract Image Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Classify Document Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image Text": {
+      "main": [
+        [
+          {
+            "node": "Classify Document Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9c2eedfb-4064-4b7b-8295-6f08eeec4b23",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b629830bc772f117b1acaaef9aa92465584eb95cb37aed0d32450ad62fc250f0"
+  },
+  "id": "aT08EBzbFBZwLq6X",
+  "tags": []
+}
